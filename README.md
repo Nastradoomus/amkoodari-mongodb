@@ -1,3 +1,3 @@
-# AMKoodari MongoDB
+# 🐒 AMKoodari MongoDB
 
-## For VSCode MongoDB playground.
+## 🆚 For VSCode MongoDB playground.
