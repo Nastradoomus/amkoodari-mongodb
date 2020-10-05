@@ -1,0 +1,235 @@
+// Step 1: Select (and create) database shop.
+use("shop");
+
+// Step 2 and 3: Create collections and insert some data into them
+
+// Let's drop any data that we have...
+db.products.drop();
+db.customers.drop();
+
+// Let's put data into our products and customers collections
+
+// Car Document Fields {_id, name, make, model, year, price, quantity}
+db.products.insertMany([
+  {_id : 1, name:'Toyota', make:'Celica', model:'Megafast', year:2010, price:20000, quantity:5},
+  {_id : 2, name:'Fiat', make:'Panda', model:'2.5 Turbo V8', year:1981, price:10000, quantity:10},
+  {_id : 3, name:'Audi', make:'A1000', model:'Rally Edition', year:2017, price:1000, quantity:7},
+  {_id : 4, name:'Ford', make:'Focus', model:'Un-Focus', year:2012, price:200000, quantity:8},
+  {_id : 5, name:'Mercedes', make:'Crash', model:'Used', year:2012, price:500, quantity:29},
+])
+
+//  Furniture Document Fields {_id, name, material, color, price, quantity}
+db.products.insertMany([
+  {_id:6, name:'Chair', material:'Metal', color:'White', price:20, quantity:100},
+  {_id:7, name:'Bed', material:'Wool', color:'Black', price:200, quantity:200},
+  {_id:8, name:'Lamp', material:'Plastic', color:'Yellow', price:20000, quantity:300},
+  {_id:9, name:'Dog', material:'Living matter', color:'Green', price:200000, quantity:400},
+  {_id:10, name:'Life', material:'Don\'t know', color:'Grey', price:2000000, quantity:500},
+])
+
+// Equipment Document Fields {_id, name, brand, price, quantity}
+db.products.insertMany([
+  {_id:11, name:'Hammer', brand:'K-Rauta', price:1, quantity:1300},
+  {_id:12, name:'Door handle', brand:'Rautia', price:2, quantity:145656},
+  {_id:13, name:'Camera', brand:'Cannon', price:3, quantity:1},
+  {_id:14, name:'Music', brand:'Some Artist', price:4, quantity:0},
+  {_id:15, name:'Fresh air', brand:'Human Right', price:0, quantity:10},
+])
+
+// Customers {_id, firstName, lastName, address, email, gender, age, orders: array({productId, orderDate, count})}
+
+db.customers.insertMany([
+  {_id:1, firstName:'John', lastName:'Doe', address:'Doesn\'t have', email:'john@doe.com', gender:'male', age:666, orders:[
+    {productId:1, orderDate: new Date('2019-04-13T23:32:50Z'), count:1},
+    {productId:2, orderDate: new Date('2020-09-28T11:43:00Z'), count:2},
+  ],},
+  {_id:2, firstName:'Jane', lastName:'Doe', address:'Right besides John', email:'jane@doe.com', gender:'female', age:100, orders:[
+    {productId:3, orderDate: new Date('2011-03-07T07:33:52Z'), count:3 },
+    {productId:4, orderDate: new Date('2012-10-28T11:43:43Z'), count:4},
+  ],},
+  {_id:3, firstName:'Def', lastName:'Leppard', address:'Hollywood', email:'def@leppard.com', gender:'male', age:36, orders:[
+    {productId:5, orderDate: new Date('2014-12-12T23:45:52Z'), count:5},
+    {productId:6, orderDate: new Date('2015-03-18T16:13:24Z'), count:6},
+  ],},
+  {_id:4, firstName:'Mika', lastName:'Häkkinen', address:'Monaco', email:'mika@haekkinen.fi', gender:'male', age:16, orders:[
+    {productId:7,orderDate: new Date('2019-04-13T23:32:50Z'), count:7},
+    {productId:8, orderDate: new Date('2020-09-28T11:43:00Z'), count:8},
+  ],},
+  {_id:5, firstName:'Butt', lastName:'Reynolds', address:'Dead', email:'butt@reynolds.us', gender:'male', age:76, orders:[
+    {productId:9,orderDate: new Date('2019-04-13T23:32:50Z'), count:9},
+    {productId:10, orderDate: new Date('2020-09-28T11:43:00Z'), count:10},
+  ],}
+  ]);
+
+// Step 4:
+  // 1. List available database names.
+  // in Mongo prompt: show dbs.
+db.adminCommand( { listDatabases: 1 } );
+
+  // 2. Switch to the 'shop' database.
+  // in Mongo prompt: use shop.
+//use('shop');
+
+  // 3. Check the current database name.
+  // in Mongo prompt: db
+
+  // 4. Statement for creating a capped collection with a maximum of 100 documents named 'testCappedCollection'.
+  // in Mongo prompt: db.createCollection( 'testCappedCollection', { capped: true, size: 100 } );
+/*
+db.runCommand({
+  create: 'testCappedCollection',
+  capped: true,
+  size: 100,
+  max: 100,
+  });
+
+  // 5. Statement for dropping the 'testCappedCollection' collection.
+
+db.testCappedCollection.drop();
+*/
+
+
+  // 6. List all available collections.
+
+db.getCollectionNames();
+
+  // 7. Get the full list of all the customers with all fields except email.
+
+db.getCollection('customers').find({},{email: 0});
+
+  // or
+
+db.customers.find({},{email: 0});
+
+  // 8. Get the full list of all the car documents from the 'products' collection.
+  // Note: Since there isn't any field like 'type' : 'car' in the products collection
+  // I'm going to pull cars with 'model' field.
+
+db.products.find({model: {$exists: true}});
+
+  // 9. Get the total number of sold products.
+
+db.customers.aggregate( [
+  { $unwind: '$orders' },
+  {
+    $group: {
+       _id: null,
+       sold: { $sum: 1 }
+    }
+  }
+
+] );
+
+db.customers.find( {'orders': { $elemMatch: { count: { $exists: true} } } } ).sort({_id:-1}).limit(1);
+
+db.customers.aggregate([
+  { $unwind: '$orders' },
+  { $group: { _id: null, sold: { $max: '$orders.count' } } },
+  { $project: { sold: 1, _id:0 } }
+])
+
+ // 10. List all customers that his/her 'firstName' is John or his/her email address starts with the 'john' word.
+
+db.customers.find({$or : [{ firstName: 'John' },{ email: { $regex:'^john*' } } ] });
+
+// 11. Statement for adding a new document to 'products' collection.
+
+db.products.insertOne({ _id:16, name:'Screws', brand:'Wurth', price:12, quantity:100 })
+
+// 12. Statement for adding a new document to 'customers' collection.
+
+db.customers.insertOne({ _id:6, firstName:'Aleksis', lastName:'Stoned', address:'Finalnd', email:'aleksis@kivi.fi', gender:'male', age:176, orders:[] })
+
+// 13. Modifying customers’ firstName and lastName with certain customer id.
+
+db.customers.updateOne({ _id:6 }, { $set: { firstName:'Not Aleksis', lastName:'Not Stoned' } });
+
+// 14. Modifying the quantity field of products with certain product id.
+
+db.customers.updateOne({ _id:1 }, { $set: { quantity:100000 } });
+
+// 15. Update the 'firstName' field of a customer who's 'firstName' is 'David' or insert a new document if no match is found.
+
+let David = {_id:7, firstName:'David', lastName:'Beat Goljat', address:'Somewhere', email:'what@ever.fi', gender:'male', age:1176, orders:[
+  {productId:9,orderDate: new Date('2019-04-13T23:32:50Z'), count:9},
+  {productId:10, orderDate: new Date('2020-09-28T11:43:00Z'), count:10},
+] }
+
+let {_id,firstName,lastName,address,email,gender,age,orders} = David
+//db.customers.insertOne({'_id':_id, 'firstName':firstName, 'lastName':lastName, 'address':address, 'email':email, 'gender':gender, 'age':age, 'orders':orders})
+db.customers.updateOne({ firstName: firstName }, { $set: {_id:_id, firstName: firstName, lastName:lastName, address:address, email:email, gender:gender, age:age, orders:orders }}, { upsert: true } )
+
+// 16. Update the orders array of a certain customer and push a new order record.
+
+David = {_id:7, orders:[
+  {productId:9, orderDate: new Date('2019-04-13T23:32:50Z'), count:9},
+  {productId:10, orderDate: new Date('2020-09-28T11:43:00Z'), count:10},
+  {productId:11, orderDate: new Date('2020-10-01T12:53:20Z'), count:11}
+] }
+
+_id = David._id;
+orders = David.orders;
+db.customers.update({ _id: _id }, { $set: {orders:orders } }, { upsert: true } );
+
+// 17. Increase the age of all customers by +1.
+
+db.customers.updateMany(
+   {},
+   { $inc: { age: 1 } }
+)
+
+// 18. Add a new field named "phone" to all the available documents in the "customers" collection.
+
+db.customers.aggregate (
+  { $addFields: { phone: "" } }
+)
+
+// 19. Remove documents of products which are not available.
+
+// Let's update some quantities
+db.products.updateMany(
+  { _id: { $in:[1,2,3,4,5,6] }} , { $set : { quantity:0 } }
+  )
+
+db.products.remove({ quantity: 0 })
+
+// 20. Remove documents of users who have no address.
+
+// Let's remove some addresses
+
+db.customers.updateMany(
+  { _id: { $in:[1,2,3] }} , { $unset : {address: ""} }
+)
+
+db.customers.remove({ address: null})
+
+// 21. Remove last 3 inserted documents from the products collection with running a maximum of 2 queries.
+/*
+This would work in MongoDB shell.
+db.products.remove({_id:
+    { $in: db.products.find().sort({timestamp:-1}).limit(3).map(products => products._id) }
+})
+*/
+
+arr = db.products.find().limit(3).sort({_id: -1}).toArray().map(function(doc) { return doc._id; });
+db.products.remove({_id: {$in: arr}});
+
+// 22. Remove the field "name" from all the available documents in the "products" collection.
+
+db.products.updateMany(
+  {} , { $unset : {name: ""} }
+)
+
+// 23. Remove all orders of a customer with a certain customer id.
+
+db.customers.updateMany(
+  {_id: 4} , { $unset : {orders: ""} }
+)
+
+// 24. Remove a document of customers who're age is greater than or equal to 34 and has no email address.
+
+db.customers.remove( { $and : [{ age: { $gte: 34 }}, {email: {$exists: false}} ] } )
+
+// 25. Drop shop database
+
+db.dropDatabase("shop")
