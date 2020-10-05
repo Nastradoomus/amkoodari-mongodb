@@ -1,2 +1,3 @@
-# amkoodari-mongodb
-# amkoodari-mongodb
+# AMKoodari MongoDB
+
+## For VSCode MongoDB playground.
